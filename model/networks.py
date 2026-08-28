@@ -5,8 +5,6 @@ import torch.nn as nn
 from torch.nn import init
 from torch.nn import modules
 logger = logging.getLogger('base')
-from model.cd_modules.cd_head import cd_head
-from model.cd_modules.cd_head_v2 import cd_head_v2
 ####################
 # initialize
 ####################
@@ -117,33 +115,3 @@ def define_G(opt):
         print("Distributed training")
         netG = nn.DataParallel(netG)
     return netG
-
-# Change Detection Network
-def define_CD(opt):
-    cd_model_opt = opt['model_cd']
-    diffusion_model_opt = opt['model']
-    
-    # Define change detection network head
-    # netCD = cd_head(feat_scales=cd_model_opt['feat_scales'], 
-    #                 out_channels=cd_model_opt['out_channels'], 
-    #                 inner_channel=diffusion_model_opt['unet']['inner_channel'], 
-    #                 channel_multiplier=diffusion_model_opt['unet']['channel_multiplier'],
-    #                 img_size=cd_model_opt['output_cm_size'],
-    #                 psp=cd_model_opt['psp'])
-    netCD = cd_head_v2(feat_scales=cd_model_opt['feat_scales'], 
-                    out_channels=cd_model_opt['out_channels'], 
-                    inner_channel=diffusion_model_opt['unet']['inner_channel'], 
-                    channel_multiplier=diffusion_model_opt['unet']['channel_multiplier'],
-                    img_size=cd_model_opt['output_cm_size'],
-                    time_steps=cd_model_opt["t"])
-    
-    # Initialize the change detection head if it is 'train' phase 
-    if opt['phase'] == 'train':
-        # Try different initialization methods
-        # init_weights(netG, init_type='kaiming', scale=0.1)
-        init_weights(netCD, init_type='orthogonal')
-    if opt['gpu_ids'] and opt['distributed']:
-        assert torch.cuda.is_available()
-        netCD = nn.DataParallel(netCD)
-    
-    return netCD
